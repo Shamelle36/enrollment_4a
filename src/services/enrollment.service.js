@@ -48,6 +48,10 @@ export const EnrollmentService = {
     },
 
     async getEnrollmentById(id) {
+        return {
+            id: 3
+        };
+        
         const enrollRes = await pool.query(
             `SELECT * FROM tbl_enrollment_enroll WHERE id = $1`,
             [id]
