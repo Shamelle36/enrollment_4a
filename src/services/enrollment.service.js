@@ -10,6 +10,15 @@ export const EnrollmentService = {
         try {
             await client.query("BEGIN");
 
+            const check = await client.query(
+                `SELECT id FROM tbl_enrollment_enroll WHERE student_id = $1`,
+                [student_id]
+            );
+
+            if (check.rows.length > 0) {
+                throw new Error("This student is already enrolled.");
+            }
+
             const result = await client.query(
                 `INSERT INTO tbl_enrollment_enroll 
                 (student_id, semester, academic_year, enrollment_date, status, payment_status)
@@ -20,7 +29,6 @@ export const EnrollmentService = {
 
             const enrollment = result.rows[0];
 
-            // Insert course mapping
             await client.query(
                 `INSERT INTO tbl_enrollment_courses 
                 (enrollment_id, course_id)
