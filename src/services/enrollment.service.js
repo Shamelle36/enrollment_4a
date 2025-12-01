@@ -68,7 +68,9 @@ export const EnrollmentService = {
         );
 
         return {
-            id: 3
+            ...enrollRes.rows[0],
+            course_id: course.rows[0]?.course_id || null,
+            requirements: reqRes.rows
         };
     },
 
