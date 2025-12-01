@@ -1,16 +1,9 @@
 import { pool } from "../config/db.js";
-import { AuthIntegration } from "./integrations/auth.service.js";
-import { CourseIntegration } from "./integrations/course.service.js";
-import { PaymentIntegration } from "./integrations/payment.service.js";
-
 
 export const EnrollmentService = {
 
     async createEnrollment(data) {
         const { student_id, course_id, semester, academic_year, enrollment_date } = data;
-
-        await AuthIntegration.verifyStudent(student_id);
-        await CourseIntegration.verifyCourse(course_id);
 
         const client = await pool.connect();
 
@@ -27,6 +20,7 @@ export const EnrollmentService = {
 
             const enrollment = result.rows[0];
 
+            // Insert course mapping
             await client.query(
                 `INSERT INTO tbl_enrollment_courses 
                 (enrollment_id, course_id)
@@ -99,14 +93,6 @@ export const EnrollmentService = {
     },
 
     async updateStatus(id, status) {
-
-        if (status === "APPROVED") {
-            const payment = await PaymentIntegration.checkPayment(id);
-
-            if (!payment.paid) {
-                throw new Error("Payment not completed. Cannot approve enrollment.");
-            }
-        }
 
         const payment_status = status === "APPROVED" ? "PAID" : "UNPAID";
 
