@@ -157,6 +157,17 @@ export const EnrollmentService = {
 
 
     async addRequirement(enrollment_id, requirement_name) {
+
+        // Check if enrollment exists
+        const check = await pool.query(
+            `SELECT id FROM tbl_enrollment_enroll WHERE id = $1`,
+            [enrollment_id]
+        );
+
+        if (check.rowCount === 0) {
+            throw new Error("Enrollment not found");
+        }
+
         const res = await pool.query(
             `INSERT INTO tbl_enrollment_requirements 
             (enrollment_id, requirement_name)
@@ -169,13 +180,20 @@ export const EnrollmentService = {
     },
 
     async updateRequirement(id, is_submitted) {
+
         const res = await pool.query(
             `UPDATE tbl_enrollment_requirements
-             SET is_submitted = $1, updated_at = NOW()
-             WHERE id = $2 RETURNING *`,
+            SET is_submitted = $1, updated_at = NOW()
+            WHERE id = $2
+            RETURNING *`,
             [is_submitted, id]
         );
 
+        if (res.rowCount === 0) {
+            throw new Error("Requirement not found");
+        }
+
         return res.rows[0];
     }
+
 };
