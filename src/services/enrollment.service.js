@@ -142,13 +142,19 @@ export const EnrollmentService = {
         const res = await pool.query(
             `SELECT id, semester, status, payment_status,
                     (SELECT course_id FROM tbl_enrollment_courses 
-                     WHERE enrollment_id = tbl_enrollment_enroll.id LIMIT 1) AS course_id
-             FROM tbl_enrollment_enroll WHERE student_id = $1`,
+                    WHERE enrollment_id = tbl_enrollment_enroll.id LIMIT 1) AS course_id
+            FROM tbl_enrollment_enroll
+            WHERE student_id = $1`,
             [student_id]
         );
 
+        if (res.rowCount === 0) {
+            throw new Error("No enrollments found for this student");
+        }
+
         return res.rows;
     },
+
 
     async addRequirement(enrollment_id, requirement_name) {
         const res = await pool.query(
