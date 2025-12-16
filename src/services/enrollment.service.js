@@ -77,29 +77,33 @@ export const EnrollmentService = {
     async updateEnrollment(id, data) {
         const { course_id, semester, enrollment_date } = data;
 
-        await pool.query(
+        // Update enrollment and return updated row
+        const updateResult = await pool.query(
             `UPDATE tbl_enrollment_enroll 
-             SET semester = $1, enrollment_date = $2, updated_at = NOW()
-             WHERE id = $3`,
+            SET semester = $1, enrollment_date = $2, updated_at = NOW()
+            WHERE id = $3
+            RETURNING *`,
             [semester, enrollment_date, id]
         );
 
+        // If no rows were updated, enrollment does not exist
+        if (updateResult.rowCount === 0) {
+            throw new Error("Enrollment not found");
+        }
+
+        // Update course only if course_id is provided
         if (course_id) {
             await pool.query(
                 `UPDATE tbl_enrollment_courses
-                 SET course_id = $1, updated_at = NOW()
-                 WHERE enrollment_id = $2`,
+                SET course_id = $1, updated_at = NOW()
+                WHERE enrollment_id = $2`,
                 [course_id, id]
             );
         }
 
-        const result = await pool.query(
-            `SELECT * FROM tbl_enrollment_enroll WHERE id = $1`,
-            [id]
-        );
-
-        return result.rows[0];
+        return updateResult.rows[0];
     },
+
 
     async updateStatus(id, status) {
 
