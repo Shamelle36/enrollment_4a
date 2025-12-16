@@ -107,17 +107,36 @@ export const EnrollmentService = {
 
     async updateStatus(id, status) {
 
-        const payment_status = status === "APPROVED" ? "PAID" : "UNPAID";
+    const payment_status = status === "APPROVED" ? "PAID" : "UNPAID";
 
-        const res = await pool.query(
-            `UPDATE tbl_enrollment_enroll
-             SET status = $1, payment_status = $2, updated_at = NOW()
-             WHERE id = $3 RETURNING *`,
-            [status, payment_status, id]
+    const res = await pool.query(
+        `UPDATE tbl_enrollment_enroll
+         SET status = $1, payment_status = $2, updated_at = NOW()
+         WHERE id = $3 AND status <> $1
+         RETURNING *`,
+        [status, payment_status, id]
+    );
+
+    // No row updated
+    if (res.rowCount === 0) {
+
+        // Check if enrollment exists
+        const check = await pool.query(
+            `SELECT status FROM tbl_enrollment_enroll WHERE id = $1`,
+            [id]
         );
 
-        return res.rows[0];
-    },
+        if (check.rowCount === 0) {
+            throw new Error("Enrollment not found");
+        }
+
+        // Enrollment exists but status is already the same
+        throw new Error("Status is already updated");
+    }
+
+    return res.rows[0];
+},
+
 
     async getUserEnrollments(student_id) {
         const res = await pool.query(
