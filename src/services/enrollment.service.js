@@ -77,7 +77,6 @@ export const EnrollmentService = {
     async updateEnrollment(id, data) {
         const { course_id, semester, enrollment_date } = data;
 
-        // Update enrollment and return updated row
         const updateResult = await pool.query(
             `UPDATE tbl_enrollment_enroll 
             SET semester = $1, enrollment_date = $2, updated_at = NOW()
@@ -86,12 +85,10 @@ export const EnrollmentService = {
             [semester, enrollment_date, id]
         );
 
-        // If no rows were updated, enrollment does not exist
         if (updateResult.rowCount === 0) {
             throw new Error("Enrollment not found");
         }
 
-        // Update course only if course_id is provided
         if (course_id) {
             await pool.query(
                 `UPDATE tbl_enrollment_courses
@@ -117,10 +114,8 @@ export const EnrollmentService = {
         [status, payment_status, id]
     );
 
-    // No row updated
     if (res.rowCount === 0) {
 
-        // Check if enrollment exists
         const check = await pool.query(
             `SELECT status FROM tbl_enrollment_enroll WHERE id = $1`,
             [id]
@@ -130,7 +125,6 @@ export const EnrollmentService = {
             throw new Error("Enrollment not found");
         }
 
-        // Enrollment exists but status is already the same
         throw new Error("Status is already updated");
     }
 
@@ -158,14 +152,23 @@ export const EnrollmentService = {
 
     async addRequirement(enrollment_id, requirement_name) {
 
-        // Check if enrollment exists
-        const check = await pool.query(
+        const enrollmentCheck = await pool.query(
             `SELECT id FROM tbl_enrollment_enroll WHERE id = $1`,
             [enrollment_id]
         );
 
-        if (check.rowCount === 0) {
+        if (enrollmentCheck.rowCount === 0) {
             throw new Error("Enrollment not found");
+        }
+
+        const requirementCheck = await pool.query(
+            `SELECT id FROM tbl_enrollment_requirements
+            WHERE enrollment_id = $1 AND requirement_name = $2`,
+            [enrollment_id, requirement_name]
+        );
+
+        if (requirementCheck.rowCount > 0) {
+            throw new Error("Requirement already exists");
         }
 
         const res = await pool.query(
@@ -178,6 +181,7 @@ export const EnrollmentService = {
 
         return res.rows[0];
     },
+
 
     async updateRequirement(id, is_submitted) {
 
